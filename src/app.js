@@ -4,7 +4,6 @@ import cors from 'cors';
 
 const app = express();
 
-
 // CONFIGURING MIDDLEWARES
 // to resolve the CORS error so that the frontend can connect to backend smoothly
 app.use(cors({
@@ -25,6 +24,14 @@ app.use(cookieParser());
 // handling the static data like images, documents, etc.
 app.use(express.static("public"));
 
+
+// AFTER ALL THE MIDDLEWARE DECLARAITONS, NOW WE WILL START IMPORTING ROUTES AND DECLARING THEM
+
+// importing routes
+import { userRouter } from './routes/user.routes.js';
+
+// declaring routes
+app.use("/api/v1/users", userRouter);
 
 
 
