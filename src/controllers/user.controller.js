@@ -31,7 +31,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
   // check if the user already exists
   // this we can do using the User model that has been created in the database
-  const existingUser = User.findOne({
+  const existingUser = await User.findOne({
     $or: [{ username }, { email }]
   })
 
@@ -46,9 +46,12 @@ const registerUser = asyncHandler(async (req, res) => {
   // working of code ---- jaise humko express ki help se req.body milta hai waise hi humein multer ki help se req.files ka access milta hai or wo isliye kyuki multer middleware hai jo req ko extra properties provide krwata hai jaise ki files in our case
   // files me se jab humein avatar milega to wo ek object ke form me milta hai usme se hum 1st element ko access kr rhe hain jo ki khud ek object hai or usme se hum path ko access kr rhe hain or ye path humein location degi avatar ki humare server pe 
   const avatarLocalPath = req.files?.avatar[0]?.path
+  console.log("avatar ka local path: ", avatarLocalPath);
   const coverImageLocalPath = req.files?.coverImage[0]?.path
+  console.log("cover image ka local path: ", coverImageLocalPath)
   // this will give us the path at which these files are available in the server - these paths will be required when we will upload them to cloudinary
   //  these files available to our server at this point and are yet to get uploaded to cloudinary
+
 
   // KYUKI AVATAR COMPULSORY HAI USER SE LENA ISLIYE EK CHECK LAGA DETE HAIN
   if (!avatarLocalPath) {
@@ -57,12 +60,13 @@ const registerUser = asyncHandler(async (req, res) => {
 
   // if cover image and avatar available - upload them to cloudinary
   const uploadedAvatar = await uploadOnCloudinary(avatarLocalPath)
+  console.log(uploadedAvatar)
   const uploadedCoverImage = await uploadOnCloudinary(coverImageLocalPath)
 
   // KYUKI AVATAR KA FIELD DATABASE ME MANDATORY HAI TO EK OR CHECK LAGANA BANTA HAI YAHA PE NHI TO DB FATEGA
-  if (!uploadedAvatar) {
-    throw new ApiErrorHandler(400, "Avatar is required!!!")
-  }
+  // if (!uploadedAvatar) {
+  //   throw new ApiErrorHandler(400, "Avatar is required!!!")
+  // }
 
 
   // create user object to upload to database
@@ -77,20 +81,15 @@ const registerUser = asyncHandler(async (req, res) => {
   // remove password and refresh token field from response that we will get from database kyuki ham user ko ye dono fields nahi dikhana chahte for obv reasons
   const checkCreatedUser = await User.findById(user._id).select("-password -refreshToken")
 
+  if(!checkCreatedUser){
+    throw new ApiErrorHandler(500, "something went wrong while registering the user")
+  }
+
 
   // return res
   res.status(201).json(
     new ApiResponseHandler(200, checkCreatedUser, "User created successfully!!!")
   )
-
-
-
-
-
-
-
-
-
 
 })
 
