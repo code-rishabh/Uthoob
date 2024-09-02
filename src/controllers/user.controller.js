@@ -123,7 +123,7 @@ const loginUser = asyncHandler(async (req, res) => {
 
   const { username, email, password } = req.body
 
-  if (!username || !email) {
+  if (!username && !email) {
     throw new ApiErrorHandler(400, `username or email is required!!!`)
   }
 
@@ -137,7 +137,7 @@ const loginUser = asyncHandler(async (req, res) => {
 
   // now we need to check if the user entered password matches the password present in the database or not - this we can do by using the method isPasswordCorrect which we created in the user.model.js file
   // this method will take user entered password as a parameter and will compare it with the password present in the database
-  const isPasswordValid = user.isPasswordCorrect(password)
+  const isPasswordValid = findUserFromDB.isPasswordCorrect(password)
 
   if (!isPasswordValid) {
     throw new ApiErrorHandler(401, `Incorrect Password!!!`)
@@ -149,7 +149,7 @@ const loginUser = asyncHandler(async (req, res) => {
 
   // since we created the access and refresh token after the user was found in the DB so to return the final data to the user/frontend we need to update findUserInDB, along with this we will select out the fields which we don not want to send to the frontend from the user object
 
-  const loginUser = await User.findById(findUserFromDB._id).select("-password -refreshToken")
+  const loggedInUser = await User.findById(findUserFromDB._id).select("-password -refreshToken")
 
 
   // SENDING TOKEN USING SECURE COOKIES --> 
@@ -160,20 +160,22 @@ const loginUser = asyncHandler(async (req, res) => {
   }
 
   // here we have created a cookie in the form of key-value pair whose key is "accessToken" and value is accessToken
-  res
+  return res
     .status(200)
     .cookie("accessToken", accessToken, options)
     .cookie("refreshToken", refreshToken, options)
     .json(
       new ApiResponseHandler(200,
         {
-          user: loginUser, accessToken, refreshToken
+          user: loggedInUser, accessToken, refreshToken
         },
         "User logged in successfully!!!"
       )
     )
 })
 
+
+// CODE FOR USER LOGOUT -->
 const logoutUser = asyncHandler(async (req, res) => {
   await User.findByIdAndUpdate(req.user._id, {
     $set: {
@@ -190,13 +192,13 @@ const logoutUser = asyncHandler(async (req, res) => {
     secure: true
   }
 
-  res.
-  status(200)
-  .clearCookie("accessToken", accessToken, options)
-  .clearCookie("refreshToken", refreshToken, options)
-  .json(
-    new ApiResponseHandler(200, {}, `User logged Out Successfully!!!`)
-  )
+ return res.
+    status(200)
+    .clearCookie("accessToken", options)
+    .clearCookie("refreshToken", options)
+    .json(
+      new ApiResponseHandler(200, {}, `User logged Out Successfully!!!`)
+    )
 })
 
 

@@ -23,6 +23,6 @@ userRouter.route("/register").post(
 
 userRouter.route("/login").post(loginUser)
 
-userRouter.route("logout").post(verifyJWT, logoutUser)
+userRouter.route("/logout").post(verifyJWT, logoutUser)
 
 export { userRouter }
