@@ -18,6 +18,8 @@ const generateAccessTokenAndRefreshToken = async (userId) => {
 
 }
 
+
+// CODE FOR REGISTERING USER --> 
 const registerUser = asyncHandler(async (req, res) => {
   // steps that are involved in registering a user -->
   // get user details from frontend
@@ -220,7 +222,7 @@ const updateRefreshToken = asyncHandler(async (req, res) => {
       throw new ApiErrorHandler(401, `Invalid refresh token!!!`)
     }
 
-    if (incomingRefreshToken !== user?.refreshToken){
+    if (incomingRefreshToken !== user?.refreshToken) {
       throw new ApiErrorHandler(401, "refresh token is expired!!!")
     }
 
@@ -251,6 +253,126 @@ const updateRefreshToken = asyncHandler(async (req, res) => {
 
 })
 
+// CODE FOR CHANGING USER PASSWORD -->
+const changeUserPassword = asyncHandler(async (req, res) => {
+  const { oldPassword, newPassword } = req.body
+
+  const user = await User.findById(req.user?._id)
+  if (!user) {
+    throw new ApiErrorHandler(401, "")
+  }
+
+  const isPasswordCorrect = await User.isPasswordCorrect(oldPassword)
+
+  if (!isPasswordCorrect) {
+    throw new ApiErrorHandler(401, "Password does not match your previous password!!!")
+  }
+
+  user.password = newPassword
+  await user.save({ validateBeforeSave: false })
+
+  return res
+    .status(200)
+    .json(new ApiResponseHandler(200, {}, "Password Updated Successfully!!!"))
 
 
-export { registerUser, loginUser, logoutUser, updateRefreshToken }
+})
+
+// CODE TO GET/FETCH CURRENT USER --> 
+const getCurrentUser = asyncHandler(async (req, res) => {
+  return res
+    .status(200)
+    .json(new ApiResponseHandler(200, req.user, "Current user fetched successfully!!!"))
+})
+
+// CODE TO UPDATE THE ACCOUNT DETAILS --> 
+const updateAccountDetails = asyncHandler(async (req, res) => {
+  const { fullname, email } = req.body
+
+  const user = await User.findByIdAndUpdate(req.user?._id,
+    {
+      $set: {
+        fullname, email
+      },
+
+    },
+    {
+      new: true
+    }
+  ).select("-password")
+
+  return res
+    .status(200)
+    .json(new ApiResponseHandler(200, user, "User details updated successfully!!!"))
+
+
+})
+
+// CODE FOR UPDATING FILES INCOMING FROM THE USER (I.E AVATAR, COVER IMAGE)
+const updateUserAvatar = asyncHandler(async (req, res) => {
+  const newAvatarLocalPath = req.file?.path
+
+  if (!newAvatarLocalPath) {
+    throw new ApiErrorHandler(400, "Avatar path not found!!!")
+  }
+
+  const newAvatar = await uploadOnCloudinary(newAvatarLocalPath)
+
+  if (!newAvatar.url) {
+    throw new ApiErrorHandler(400, "Error uploading avatar file path to cloudinary!!!")
+  }
+
+  const user = User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: {
+        avatar: newAvatar.url
+      }
+    },
+    {
+      new: true
+    }
+  ).select("-password")
+
+  return res
+    .status(200)
+    .json(new ApiResponseHandler(200, user, "Avatar updated successfully!!!"))
+
+
+
+})
+
+const updateUserCoverImage = asyncHandler(async (req, res) => {
+  const newCoverImageLocalPath = req.file?.path
+
+  if (!newCoverImageLocalPath) {
+    throw new ApiErrorHandler(400, "Cover Image path not found!!!")
+  }
+
+  const newCoverImage = await uploadOnCloudinary(newCoverImageLocalPath)
+
+  if (!newCoverImage.url) {
+    throw new ApiErrorHandler(400, "Error uploading Cover Image file path to cloudinary!!!")
+  }
+
+  const user = User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: {
+        coverImage: newCoverImage.url
+      }
+    },
+    {
+      new: true
+    }
+  ).select("-password")
+
+  return res
+    .status(200)
+    .json(new ApiResponseHandler(200, user, "Cover Image updated successfully!!!"))
+
+})
+
+
+
+export { registerUser, loginUser, logoutUser, updateRefreshToken, changeUserPassword, getCurrentUser, updateAccountDetails, updateUserAvatar, updateUserCoverImage }
